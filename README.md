@@ -21,7 +21,7 @@ A clean, modern personal expense tracker that runs entirely on your local machin
 ## Setup
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/budgetty.git
+git clone https://github.com/Driftay/Budgetty.git
 cd budgetty
 npm install
 ```
