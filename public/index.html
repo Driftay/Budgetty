@@ -27,11 +27,30 @@ body {
 .logo-text { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; color: #f1f5f9; }
 .logo-sub  { font-size: 12px; color: #64748b; }
 .header-controls { display: flex; align-items: center; gap: 10px; }
-.currency-select {
+.custom-select { position: relative; }
+.custom-select-trigger {
   background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 8px; color: #e2e8f0; padding: 7px 10px;
-  font-size: 13px; cursor: pointer; outline: none;
+  border-radius: 8px; color: #e2e8f0; padding: 7px 12px;
+  font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 8px;
+  user-select: none; transition: border-color 0.15s; white-space: nowrap;
 }
+.custom-select-trigger:hover { border-color: rgba(255,255,255,0.2); }
+.custom-select-trigger.open { border-color: rgba(99,102,241,0.5); }
+.select-arrow { font-size: 10px; color: #64748b; transition: transform 0.15s; line-height: 1; }
+.custom-select-trigger.open .select-arrow { transform: rotate(180deg); }
+.custom-select-dropdown {
+  position: absolute; top: calc(100% + 6px); right: 0;
+  background: rgba(13,17,30,0.98); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px; min-width: 160px; z-index: 200;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6); overflow: hidden; display: none;
+}
+.custom-select-dropdown.open { display: block; }
+.custom-select-option {
+  padding: 9px 14px; font-size: 13px; color: #94a3b8; cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+.custom-select-option:hover { background: rgba(99,102,241,0.15); color: #e2e8f0; }
+.custom-select-option.selected { color: #a5b4fc; background: rgba(99,102,241,0.08); }
 .export-btn {
   background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.3);
   border-radius: 8px; color: #a5b4fc; padding: 7px 14px;
@@ -181,7 +200,13 @@ body {
       </div>
     </div>
     <div class="header-controls">
-      <select id="currency-select" class="currency-select"></select>
+      <div class="custom-select" id="currency-wrapper">
+        <div class="custom-select-trigger" id="currency-trigger">
+          <span id="currency-display">$ USD</span>
+          <span class="select-arrow">▾</span>
+        </div>
+        <div class="custom-select-dropdown" id="currency-dropdown"></div>
+      </div>
       <button id="export-btn" class="export-btn">↓ Export CSV</button>
     </div>
   </div>
@@ -537,20 +562,40 @@ async function confirmDelete(id) {
 
 // ── Currency ──────────────────────────────────────────────────
 function populateCurrencySelect() {
-  const select = document.getElementById('currency-select');
-  select.innerHTML = '';
+  const dropdown = document.getElementById('currency-dropdown');
+  dropdown.innerHTML = '';
   Object.entries(CURRENCIES).forEach(([code, { symbol }]) => {
-    const opt = document.createElement('option');
-    opt.value = code;
+    const opt = document.createElement('div');
+    opt.className = 'custom-select-option' + (code === state.settings.currency ? ' selected' : '');
     opt.textContent = `${symbol} ${code}`;
-    opt.selected = (code === state.settings.currency);
-    select.appendChild(opt);
+    opt.addEventListener('click', () => handleCurrencyChange(code));
+    dropdown.appendChild(opt);
   });
+  const cur = state.settings.currency;
+  document.getElementById('currency-display').textContent =
+    `${(CURRENCIES[cur] || CURRENCIES.USD).symbol} ${cur}`;
 }
 
-async function handleCurrencyChange(e) {
-  await saveSettings({ currency: e.target.value });
+async function handleCurrencyChange(code) {
+  await saveSettings({ currency: code });
+  populateCurrencySelect();
+  closeCurrencyDropdown();
   render();
+}
+
+function toggleCurrencyDropdown() {
+  const trigger  = document.getElementById('currency-trigger');
+  const dropdown = document.getElementById('currency-dropdown');
+  const isOpen   = dropdown.classList.contains('open');
+  if (isOpen) { closeCurrencyDropdown(); } else {
+    trigger.classList.add('open');
+    dropdown.classList.add('open');
+  }
+}
+
+function closeCurrencyDropdown() {
+  document.getElementById('currency-trigger').classList.remove('open');
+  document.getElementById('currency-dropdown').classList.remove('open');
 }
 
 // ── Export ────────────────────────────────────────────────────
@@ -583,10 +628,15 @@ async function init() {
     document.getElementById(id).addEventListener('input', saveDraft);
   });
   populateCurrencySelect();
-  document.getElementById('currency-select').addEventListener('change', handleCurrencyChange);
+  document.getElementById('currency-trigger').addEventListener('click', toggleCurrencyDropdown);
+  document.addEventListener('click', e => {
+    if (!document.getElementById('currency-wrapper').contains(e.target)) closeCurrencyDropdown();
+  });
   document.getElementById('export-btn').addEventListener('click', handleExport);
   document.getElementById('cancel-btn').addEventListener('click', cancelEdit);
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' && state.editingId) cancelEdit(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { closeCurrencyDropdown(); if (state.editingId) cancelEdit(); }
+  });
 
   restoreDraft();
   render();
