@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Budgetty</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #07070f; color: #e2e8f0;
+  font-family: 'Inter', system-ui, sans-serif; min-height: 100vh;
+}
+.app { max-width: 1100px; margin: 0 auto; padding: 28px 24px; }
+
+/* Header */
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 24px; flex-wrap: wrap; gap: 12px;
+}
+.logo { display: flex; align-items: center; gap: 10px; }
+.logo-icon {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  border-radius: 10px; display: flex; align-items: center; justify-content: center;
+  font-size: 18px; box-shadow: 0 0 16px rgba(99,102,241,0.4);
+}
+.logo-text { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; color: #f1f5f9; }
+.logo-sub  { font-size: 12px; color: #64748b; }
+.header-controls { display: flex; align-items: center; gap: 10px; }
+.currency-select {
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px; color: #e2e8f0; padding: 7px 10px;
+  font-size: 13px; cursor: pointer; outline: none;
+}
+.export-btn {
+  background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.3);
+  border-radius: 8px; color: #a5b4fc; padding: 7px 14px;
+  font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;
+}
+.export-btn:hover { background: rgba(99,102,241,0.25); }
+
+/* Period Bar */
+.period-bar {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 22px;
+  background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px; padding: 10px 16px; flex-wrap: wrap;
+}
+.period-label { font-size: 11px; color: #475569; letter-spacing: 1px; text-transform: uppercase; flex-shrink: 0; }
+.range-inputs { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.range-label { font-size: 11px; color: #64748b; }
+.range-input {
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px; color: #e2e8f0; padding: 5px 10px;
+  font-size: 12px; outline: none; color-scheme: dark;
+}
+.range-sep { color: #475569; font-size: 11px; }
+.apply-btn {
+  background: rgba(99,102,241,0.2); border: 1px solid rgba(99,102,241,0.4);
+  border-radius: 6px; color: #a5b4fc; font-size: 12px; font-weight: 600;
+  padding: 5px 12px; cursor: pointer;
+}
+.apply-btn:hover { background: rgba(99,102,241,0.3); }
+.all-time-btn {
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 6px; color: #64748b; font-size: 12px; padding: 5px 12px; cursor: pointer;
+}
+.all-time-btn:hover { color: #94a3b8; }
+.period-summary { margin-left: auto; font-size: 12px; color: #475569; flex-shrink: 0; }
+
+/* Metrics */
+.metrics { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 22px; }
+@media (max-width: 700px) { .metrics { grid-template-columns: repeat(2,1fr); } }
+.metric {
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 14px; padding: 18px 20px; position: relative; overflow: hidden;
+}
+.metric::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; }
+.metric.total::before  { background: linear-gradient(90deg,#6366f1,#8b5cf6); }
+.metric.wasted::before { background: linear-gradient(90deg,#ef4444,#f97316); }
+.metric.needed::before { background: linear-gradient(90deg,#22c55e,#16a34a); }
+.metric.pct::before    { background: linear-gradient(90deg,#f59e0b,#eab308); }
+.metric-label { font-size: 10px; letter-spacing: 1px; color: #64748b; text-transform: uppercase; margin-bottom: 8px; }
+.metric-value { font-size: 26px; font-weight: 700; letter-spacing: -1px; }
+.metric.total  .metric-value { color: #f1f5f9; }
+.metric.wasted .metric-value { color: #ef4444; }
+.metric.needed .metric-value { color: #22c55e; }
+.metric.pct    .metric-value { color: #f59e0b; }
+.metric-sub { font-size: 11px; color: #475569; margin-top: 4px; }
+
+/* Form */
+.form-card {
+  background: rgba(99,102,241,0.05); border: 1px solid rgba(99,102,241,0.2);
+  border-radius: 16px; padding: 22px 24px; margin-bottom: 22px;
+}
+.form-title { font-size: 12px; letter-spacing: 1px; color: #818cf8; text-transform: uppercase; font-weight: 600; margin-bottom: 16px; }
+.form-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label { font-size: 11px; color: #64748b; letter-spacing: 0.5px; }
+.field input {
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px; color: #e2e8f0; padding: 9px 12px; font-size: 13px; outline: none;
+  transition: border-color 0.15s;
+}
+.field input:focus { border-color: rgba(99,102,241,0.5); }
+.f-amount  { width: 130px; }
+.f-reason  { flex: 1; min-width: 150px; }
+.f-comment { flex: 1.5; min-width: 170px; }
+.needed-toggle {
+  display: flex; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px; overflow: hidden; height: 39px;
+}
+.toggle-opt {
+  padding: 0 16px; display: flex; align-items: center;
+  font-size: 12px; font-weight: 600; cursor: pointer;
+  transition: background 0.15s, color 0.15s; color: #475569;
+}
+.toggle-opt:first-child { border-right: 1px solid rgba(255,255,255,0.08); }
+.toggle-opt.active-yes { background: rgba(34,197,94,0.15);  color: #22c55e; }
+.toggle-opt.active-no  { background: rgba(239,68,68,0.12);  color: #ef4444; }
+.form-btn {
+  background: linear-gradient(135deg,#6366f1,#8b5cf6); border: none; border-radius: 8px;
+  color: #fff; font-size: 13px; font-weight: 600; padding: 0 20px; height: 39px;
+  cursor: pointer; white-space: nowrap; box-shadow: 0 0 16px rgba(99,102,241,0.3);
+  transition: opacity 0.15s;
+}
+.form-btn:hover { opacity: 0.9; }
+
+/* Entries */
+.entries-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.entries-title { font-size: 12px; letter-spacing: 1px; color: #64748b; text-transform: uppercase; }
+.entries-count { font-size: 12px; color: #334155; }
+.entry {
+  background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px; padding: 14px 18px; margin-bottom: 8px;
+  display: flex; align-items: center; gap: 14px;
+}
+.entry-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.dot-yes { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+.dot-no  { background: #ef4444; box-shadow: 0 0 6px #ef4444; }
+.entry-amount { font-size: 15px; font-weight: 700; width: 90px; flex-shrink: 0; }
+.badge { font-size: 9px; letter-spacing: 1px; font-weight: 700; padding: 2px 7px; border-radius: 99px; flex-shrink: 0; }
+.badge-yes { background: rgba(34,197,94,0.12); color: #22c55e; border: 1px solid rgba(34,197,94,0.2); }
+.badge-no  { background: rgba(239,68,68,0.12); color: #ef4444; border: 1px solid rgba(239,68,68,0.2); }
+.entry-info { flex: 1; min-width: 0; }
+.entry-reason  { font-size: 13px; color: #e2e8f0; font-weight: 500; }
+.entry-comment { font-size: 11px; color: #475569; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.entry-date { font-size: 11px; color: #334155; flex-shrink: 0; }
+.entry-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.action-btn { width: 28px; height: 28px; border-radius: 6px; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 13px; }
+.edit-btn { background: rgba(99,102,241,0.15); color: #818cf8; }
+.edit-btn:hover { background: rgba(99,102,241,0.25); }
+.del-btn  { background: rgba(239,68,68,0.1);  color: #f87171; }
+.del-btn:hover  { background: rgba(239,68,68,0.2); }
+.empty-state { text-align: center; padding: 40px; color: #334155; font-size: 14px; }
+.footer { text-align: center; margin-top: 28px; font-size: 11px; color: #1e293b; }
+/* Toast */
+.toast-container { position: fixed; bottom: 24px; right: 24px; display: flex; flex-direction: column; gap: 8px; z-index: 1000; pointer-events: none; }
+.toast { background: rgba(15,23,42,0.97); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 12px 18px; font-size: 13px; color: #e2e8f0; box-shadow: 0 4px 20px rgba(0,0,0,0.5); animation: toast-in 0.2s ease; pointer-events: auto; }
+.toast.success { border-left: 3px solid #22c55e; }
+.toast.info    { border-left: 3px solid #6366f1; }
+@keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+/* Validation */
+.field input.invalid { border-color: rgba(239,68,68,0.6) !important; }
+.field-error { font-size: 11px; color: #ef4444; margin-top: 3px; display: none; }
+.field-error.visible { display: block; }
+/* Cancel button */
+.cancel-btn { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #64748b; font-size: 13px; font-weight: 600; padding: 0 16px; height: 39px; cursor: pointer; white-space: nowrap; display: none; align-items: center; }
+.cancel-btn.visible { display: flex; }
+.cancel-btn:hover { color: #94a3b8; border-color: rgba(255,255,255,0.18); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">💰</div>
+      <div>
+        <div class="logo-text">Budgetty</div>
+        <div class="logo-sub">Personal Expense Tracker</div>
+      </div>
+    </div>
+    <div class="header-controls">
+      <select id="currency-select" class="currency-select"></select>
+      <button id="export-btn" class="export-btn">↓ Export CSV</button>
+    </div>
+  </div>
+
+  <div class="period-bar">
+    <span class="period-label">Period</span>
+    <div class="range-inputs">
+      <span class="range-label">From</span>
+      <input id="filter-from" class="range-input" type="date">
+      <span class="range-sep">→</span>
+      <span class="range-label">To</span>
+      <input id="filter-to" class="range-input" type="date">
+      <button id="apply-filter" class="apply-btn">Apply</button>
+    </div>
+    <button id="all-time-btn" class="all-time-btn">All Time</button>
+    <div id="period-summary" class="period-summary"></div>
+  </div>
+
+  <div class="metrics">
+    <div class="metric total">
+      <div class="metric-label">Total Spent</div>
+      <div id="metric-total" class="metric-value">—</div>
+      <div id="metric-total-sub" class="metric-sub"></div>
+    </div>
+    <div class="metric wasted">
+      <div class="metric-label">Not Needed</div>
+      <div id="metric-wasted" class="metric-value">—</div>
+      <div id="metric-wasted-sub" class="metric-sub"></div>
+    </div>
+    <div class="metric needed">
+      <div class="metric-label">Necessary</div>
+      <div id="metric-necessary" class="metric-value">—</div>
+      <div id="metric-necessary-sub" class="metric-sub"></div>
+    </div>
+    <div class="metric pct">
+      <div class="metric-label">Waste Rate</div>
+      <div id="metric-waste-rate" class="metric-value">—</div>
+      <div class="metric-sub">of total spending</div>
+    </div>
+  </div>
+
+  <div class="form-card">
+    <div id="form-title" class="form-title">Add Expense</div>
+    <form id="entry-form">
+      <div class="form-row">
+        <div class="field f-amount">
+          <label id="amount-label">AMOUNT ($)</label>
+          <input id="amount-input" type="number" step="0.01" min="0.01" placeholder="0.00" required>
+          <div id="amount-error" class="field-error">Enter an amount greater than 0</div>
+        </div>
+        <div class="field f-reason">
+          <label>REASON</label>
+          <input id="reason-input" type="text" placeholder="What was this for?" required>
+          <div id="reason-error" class="field-error">Reason is required</div>
+        </div>
+        <div class="field">
+          <label>NEEDED</label>
+          <div class="needed-toggle">
+            <div id="toggle-yes" class="toggle-opt active-yes">✓ YES</div>
+            <div id="toggle-no"  class="toggle-opt">✗ NO</div>
+          </div>
+        </div>
+        <div class="field f-comment">
+          <label>COMMENT</label>
+          <input id="comment-input" type="text" placeholder="Any notes...">
+        </div>
+        <button id="form-btn" type="submit" class="form-btn">+ Add Entry</button>
+        <button id="cancel-btn" type="button" class="cancel-btn">✕ Cancel</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="entries-header">
+    <div class="entries-title">Recent Entries</div>
+    <div id="entries-count" class="entries-count"></div>
+  </div>
+  <div id="entries-list"></div>
+
+  <div class="footer">Data saved locally to budget.json</div>
+</div>
+<div id="toast-container" class="toast-container"></div>
+<script>
+// ── Constants ──────────────────────────────────────────────
+const CURRENCIES = {
+  USD: { symbol: '$',   label: 'US Dollar' },
+  EUR: { symbol: '€',   label: 'Euro' },
+  GBP: { symbol: '£',   label: 'British Pound' },
+  CAD: { symbol: 'CA$', label: 'Canadian Dollar' },
+  AUD: { symbol: 'A$',  label: 'Australian Dollar' },
+  JPY: { symbol: '¥',   label: 'Japanese Yen' },
+  CHF: { symbol: 'Fr',  label: 'Swiss Franc' },
+  INR: { symbol: '₹',   label: 'Indian Rupee' },
+  BRL: { symbol: 'R$',  label: 'Brazilian Real' },
+  MXN: { symbol: 'MX$', label: 'Mexican Peso' }
+};
+
+// ── State ───────────────────────────────────────────────────
+const state = {
+  entries:     [],
+  settings:    { currency: 'USD' },
+  filter:      { from: null, to: null },
+  editingId:   null,
+  neededValue: true
+};
+
+// ── API ─────────────────────────────────────────────────────
+async function apiFetch(url, options = {}) {
+  const res = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...options });
+  return res.json();
+}
+async function loadEntries()  { const d = await apiFetch('/api/entries'); state.entries = d.entries; }
+async function loadSettings() { state.settings = await apiFetch('/api/settings'); }
+async function createEntry(body) { return apiFetch('/api/entries', { method: 'POST', body: JSON.stringify(body) }); }
+async function updateEntry(id, body) { return apiFetch(`/api/entries/${id}`, { method: 'PUT', body: JSON.stringify(body) }); }
+async function removeEntry(id) { return apiFetch(`/api/entries/${id}`, { method: 'DELETE' }); }
+async function saveSettings(body) { state.settings = await apiFetch('/api/settings', { method: 'PUT', body: JSON.stringify(body) }); }
+
+// ── Utilities ────────────────────────────────────────────────
+function getSymbol() { return (CURRENCIES[state.settings.currency] || CURRENCIES.USD).symbol; }
+function formatAmount(amount) { return `${getSymbol()}${Number(amount).toFixed(2)}`; }
+function formatDate(isoStr) { return new Date(isoStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); }
+function escapeHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function getFilteredEntries() {
+  return state.entries
+    .filter(e => {
+      const d = new Date(e.createdAt);
+      if (state.filter.from && d < state.filter.from) return false;
+      if (state.filter.to   && d > state.filter.to)   return false;
+      return true;
+    })
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+}
+function computeMetrics(entries) {
+  const total     = entries.reduce((s, e) => s + e.amount, 0);
+  const wasted    = entries.filter(e => !e.needed).reduce((s, e) => s + e.amount, 0);
+  const necessary = entries.filter(e =>  e.needed).reduce((s, e) => s + e.amount, 0);
+  const wasteRate = total > 0 ? (wasted / total * 100).toFixed(1) + '%' : '—';
+  return { total, wasted, necessary, wasteRate };
+}
+
+// ── Toast ─────────────────────────────────────────────────────
+function showToast(msg, type = 'success') {
+  const container = document.getElementById('toast-container');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  container.appendChild(el);
+  setTimeout(() => {
+    el.style.transition = 'opacity 0.3s';
+    el.style.opacity = '0';
+    setTimeout(() => el.remove(), 300);
+  }, 2500);
+}
+
+// ── Validation ────────────────────────────────────────────────
+function clearValidation() {
+  document.getElementById('amount-input').classList.remove('invalid');
+  document.getElementById('reason-input').classList.remove('invalid');
+  document.getElementById('amount-error').classList.remove('visible');
+  document.getElementById('reason-error').classList.remove('visible');
+}
+
+// ── Draft (localStorage) ──────────────────────────────────────
+function saveDraft() {
+  if (state.editingId) return;
+  localStorage.setItem('budgetty-draft', JSON.stringify({
+    amount:  document.getElementById('amount-input').value,
+    reason:  document.getElementById('reason-input').value,
+    comment: document.getElementById('comment-input').value,
+    needed:  state.neededValue
+  }));
+}
+function restoreDraft() {
+  try {
+    const raw = localStorage.getItem('budgetty-draft');
+    if (!raw) return;
+    const d = JSON.parse(raw);
+    if (d.amount)  document.getElementById('amount-input').value  = d.amount;
+    if (d.reason)  document.getElementById('reason-input').value  = d.reason;
+    if (d.comment) document.getElementById('comment-input').value = d.comment;
+    setNeeded(d.needed !== false);
+  } catch (_) {}
+}
+function clearDraft() { localStorage.removeItem('budgetty-draft'); }
+
+// ── Cancel edit ───────────────────────────────────────────────
+function cancelEdit() {
+  state.editingId = null;
+  document.getElementById('entry-form').reset();
+  setNeeded(true);
+  clearValidation();
+  clearDraft();
+  document.getElementById('form-btn').textContent   = '+ Add Entry';
+  document.getElementById('form-title').textContent = 'Add Expense';
+  document.getElementById('cancel-btn').classList.remove('visible');
+}
+
+// ── Render ───────────────────────────────────────────────────
+function renderMetrics(entries) {
+  const { total, wasted, necessary, wasteRate } = computeMetrics(entries);
+  document.getElementById('metric-total').textContent         = formatAmount(total);
+  document.getElementById('metric-wasted').textContent        = formatAmount(wasted);
+  document.getElementById('metric-necessary').textContent     = formatAmount(necessary);
+  document.getElementById('metric-waste-rate').textContent    = wasteRate;
+  document.getElementById('metric-total-sub').textContent     = `${entries.length} entries`;
+  document.getElementById('metric-wasted-sub').textContent    = `${entries.filter(e => !e.needed).length} wasteful`;
+  document.getElementById('metric-necessary-sub').textContent = `${entries.filter(e =>  e.needed).length} justified`;
+}
+
+function renderPeriodSummary(entries) {
+  const el = document.getElementById('period-summary');
+  if (!state.filter.from && !state.filter.to) {
+    el.textContent = `${entries.length} entries · All Time`; return;
+  }
+  const fmt = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const from = state.filter.from ? fmt(state.filter.from) : '…';
+  const to   = state.filter.to   ? fmt(state.filter.to)   : 'today';
+  el.textContent = `${entries.length} entries · ${from} – ${to}`;
+}
+
+function renderFormAmountLabel() {
+  document.getElementById('amount-label').textContent = `AMOUNT (${getSymbol()})`;
+}
+
+function renderEntries(entries) {
+  const list  = document.getElementById('entries-list');
+  const count = document.getElementById('entries-count');
+  count.textContent = `${entries.length} total`;
+
+  if (entries.length === 0) {
+    list.innerHTML = '<div class="empty-state">No entries for this period</div>';
+    return;
+  }
+
+  list.innerHTML = entries.map(e => `
+    <div class="entry">
+      <div class="entry-dot ${e.needed ? 'dot-yes' : 'dot-no'}"></div>
+      <div class="entry-amount" style="color:${e.needed ? '#22c55e' : '#ef4444'}">
+        -${formatAmount(e.amount)}
+      </div>
+      <div class="badge ${e.needed ? 'badge-yes' : 'badge-no'}">
+        ${e.needed ? 'NEEDED' : 'NOT NEEDED'}
+      </div>
+      <div class="entry-info">
+        <div class="entry-reason">${escapeHtml(e.reason)}</div>
+        ${e.comment ? `<div class="entry-comment">${escapeHtml(e.comment)}</div>` : ''}
+      </div>
+      <div class="entry-date">${formatDate(e.createdAt)}</div>
+      <div class="entry-actions">
+        <button class="action-btn edit-btn" onclick="startEdit('${escapeHtml(e.id)}')">✎</button>
+        <button class="action-btn del-btn"  onclick="confirmDelete('${escapeHtml(e.id)}')">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function render() {
+  const filtered = getFilteredEntries();
+  renderMetrics(filtered);
+  renderPeriodSummary(filtered);
+  renderEntries(filtered);
+  renderFormAmountLabel();
+}
+
+// ── Filter ───────────────────────────────────────────────────
+function applyFilter() {
+  const fromVal = document.getElementById('filter-from').value;
+  const toVal   = document.getElementById('filter-to').value;
+  state.filter.from = fromVal ? new Date(fromVal + 'T00:00:00') : null;
+  state.filter.to   = toVal   ? new Date(toVal   + 'T23:59:59') : null;
+  render();
+}
+function clearFilter() {
+  document.getElementById('filter-from').value = '';
+  document.getElementById('filter-to').value   = '';
+  state.filter.from = null; state.filter.to = null;
+  render();
+}
+
+// ── Needed toggle ─────────────────────────────────────────────
+function setNeeded(val) {
+  state.neededValue = val;
+  document.getElementById('toggle-yes').className = 'toggle-opt' + (val  ? ' active-yes' : '');
+  document.getElementById('toggle-no').className  = 'toggle-opt' + (!val ? ' active-no'  : '');
+}
+
+// ── Form ──────────────────────────────────────────────────────
+async function handleFormSubmit(e) {
+  e.preventDefault();
+  const amount  = parseFloat(document.getElementById('amount-input').value);
+  const reason  = document.getElementById('reason-input').value.trim();
+  const comment = document.getElementById('comment-input').value.trim();
+
+  clearValidation();
+  let valid = true;
+  if (!amount || amount <= 0) {
+    document.getElementById('amount-input').classList.add('invalid');
+    document.getElementById('amount-error').classList.add('visible');
+    valid = false;
+  }
+  if (!reason) {
+    document.getElementById('reason-input').classList.add('invalid');
+    document.getElementById('reason-error').classList.add('visible');
+    valid = false;
+  }
+  if (!valid) return;
+
+  const payload = { amount, reason, needed: state.neededValue, comment };
+
+  if (state.editingId) {
+    await updateEntry(state.editingId, payload);
+    state.editingId = null;
+    document.getElementById('form-btn').textContent   = '+ Add Entry';
+    document.getElementById('form-title').textContent = 'Add Expense';
+    document.getElementById('cancel-btn').classList.remove('visible');
+    showToast('Entry updated');
+  } else {
+    await createEntry(payload);
+    showToast('Entry added');
+  }
+
+  document.getElementById('entry-form').reset();
+  setNeeded(true);
+  clearDraft();
+  await loadEntries();
+  render();
+}
+
+function startEdit(id) {
+  const entry = state.entries.find(e => e.id === id);
+  if (!entry) return;
+  state.editingId = id;
+  document.getElementById('amount-input').value  = entry.amount;
+  document.getElementById('reason-input').value  = entry.reason;
+  document.getElementById('comment-input').value = entry.comment;
+  setNeeded(entry.needed);
+  clearValidation();
+  document.getElementById('form-btn').textContent   = 'Save Changes';
+  document.getElementById('form-title').textContent = 'Edit Expense';
+  document.getElementById('cancel-btn').classList.add('visible');
+  document.querySelector('.form-card').scrollIntoView({ behavior: 'smooth' });
+}
+
+async function confirmDelete(id) {
+  if (!window.confirm('Delete this entry? This cannot be undone.')) return;
+  await removeEntry(id);
+  await loadEntries();
+  render();
+  showToast('Entry deleted', 'info');
+}
+
+// ── Currency ──────────────────────────────────────────────────
+function populateCurrencySelect() {
+  const select = document.getElementById('currency-select');
+  select.innerHTML = '';
+  Object.entries(CURRENCIES).forEach(([code, { symbol }]) => {
+    const opt = document.createElement('option');
+    opt.value = code;
+    opt.textContent = `${symbol} ${code}`;
+    opt.selected = (code === state.settings.currency);
+    select.appendChild(opt);
+  });
+}
+
+async function handleCurrencyChange(e) {
+  await saveSettings({ currency: e.target.value });
+  render();
+}
+
+// ── Export ────────────────────────────────────────────────────
+function handleExport() {
+  const params = new URLSearchParams();
+  if (state.filter.from) params.set('from', state.filter.from.toISOString().slice(0, 10));
+  if (state.filter.to)   params.set('to',   state.filter.to.toISOString().slice(0, 10));
+  window.location.href = `/api/export/csv?${params}`;
+}
+
+// ── Init ─────────────────────────────────────────────────────
+async function init() {
+  const now   = new Date();
+  const first = new Date(now.getFullYear(), now.getMonth(), 1);
+  const todayStr = now.toISOString().slice(0, 10);
+  const firstStr = first.toISOString().slice(0, 10);
+  document.getElementById('filter-from').value = firstStr;
+  document.getElementById('filter-to').value   = todayStr;
+  state.filter.from = new Date(firstStr + 'T00:00:00');
+  state.filter.to   = new Date(todayStr + 'T23:59:59');
+
+  await Promise.all([loadEntries(), loadSettings()]);
+
+  document.getElementById('apply-filter').addEventListener('click', applyFilter);
+  document.getElementById('all-time-btn').addEventListener('click', clearFilter);
+  document.getElementById('entry-form').addEventListener('submit', handleFormSubmit);
+  document.getElementById('toggle-yes').addEventListener('click', () => { setNeeded(true);  saveDraft(); });
+  document.getElementById('toggle-no').addEventListener('click',  () => { setNeeded(false); saveDraft(); });
+  ['amount-input', 'reason-input', 'comment-input'].forEach(id => {
+    document.getElementById(id).addEventListener('input', saveDraft);
+  });
+  populateCurrencySelect();
+  document.getElementById('currency-select').addEventListener('change', handleCurrencyChange);
+  document.getElementById('export-btn').addEventListener('click', handleExport);
+  document.getElementById('cancel-btn').addEventListener('click', cancelEdit);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && state.editingId) cancelEdit(); });
+
+  restoreDraft();
+  render();
+}
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
