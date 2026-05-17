@@ -15,6 +15,9 @@ A clean, modern personal expense tracker that runs entirely on your local machin
 
 - [Node.js](https://nodejs.org/) 18 or higher
 
+## Preview
+![](https://i.imgur.com/zoHsx0P.png)
+
 ## Setup
 
 ```bash
